@@ -79,13 +79,45 @@ const account3 = {
   }
   displayMovements(account1.movements);
 
+//calcDisplayBalance calulates and displays the total balance in an account.
+//It uses reduce() method to calulate the balance of the account.
+//Balance is displayed by modifying the labelBalance variable.
 
-  const currencies = new Map([
-    ['USD', 'United States dollar'],
-    ['EUR', 'Euro'],
-    ['GBP', 'Pound sterling'],
-  ]);
-  
-  const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
-  
+  const calcDisplayBalance = function(movements){
+    const balance = movements.reduce((acc,mov) => acc+mov,0);
+    labelBalance.textContent =`₹ ${balance}`
+  };
 
+  calcDisplayBalance(account1.movements);
+
+  const calcDisplaySummary = function(movements){
+    const incomes = movements.filter(mov => mov>0).reduce((acc,mov) => acc+mov,0)
+    labelSumIn.textContent = `₹${incomes}`;
+
+    const out = movements.filter(mov => mov<0).reduce((acc,mov) => acc+mov,0);
+    labelSumOut.textContent = `₹${Math.abs(out)}`;
+
+    const interest = movements.filter(mov => mov>0)
+                              .map(deposit => deposit*1.2/100)
+                              .filter(int => int >= 1)
+                              .reduce((acc,deposit) => acc+deposit,0);
+    labelSumInterest.textContent = `₹${interest}` 
+  }
+  calcDisplaySummary(account1.movements);
+
+  const createUserNames = function(accs){
+    accs.forEach(function(acc){
+      acc.username = acc.owner.toLowerCase().split(' ').map(name => name[0]).join('');
+    });  
+  };
+
+  createUserNames(accounts);
+
+  // const currencies = new Map([
+  //   ['USD', 'United States dollar'],
+  //   ['EUR', 'Euro'],
+  //   ['GBP', 'Pound sterling'],
+  // ]);
+  
+  // const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
+  
