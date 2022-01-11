@@ -62,11 +62,13 @@ const account3 = {
   //The function works by modifying the html of 'movements-row' by using a for-each loop.
   //The values comes from an array of accounts object where all the movements are stored.
 
-  const displayMovements = function(movements){
-
+  const displayMovements = function(movements,sort = false)
+  {
     containerMovements.innerHTML = '';
 
-    movements.forEach(function(mov,i){
+   const movs = sort ? movements.slice().sort((a,b) => a-b) : movements;
+   
+    movs.forEach(function(mov,i){
       const type = mov >0?'deposit':'withdrawal'
 
       const html = `<div class="movements_row">
@@ -124,9 +126,20 @@ calcDisplayBalance(acc);
 
 //Display Summary 
 calcDisplaySummary(acc);
+}
 
+btnLoan.addEventListener('click',function(e){
+  e.preventDefault();
 
+  const amount = Number(inputLoanAmount.value);
+  if(amount>0 && currAccount.movements.some(mov => mov>= amount*0.1) )
+  {
+    //Add movement
+    currAccount.movements.push(amount);
+    updateUI(currAccount);
   }
+  inputLoanAmount.value = '';
+})
 
   //Event Handler
 
@@ -172,7 +185,7 @@ calcDisplaySummary(acc);
 
   });
 
-btnClose.addEventListener('click', function(e){
+  btnClose.addEventListener('click',function(e){
   e.preventDefault();
     if(inputCloseUsername.value === currAccount.username && Number(inputClosePin.value) === currAccount.pin)
     {
@@ -185,4 +198,13 @@ btnClose.addEventListener('click', function(e){
     containerApp.style.opacity = 0;
     }
     inputCloseUsername.value = inputClosePin.value = '';
-})
+});
+
+let sorted = false;
+
+//Sorting.
+btnSort.addEventListener('click',function(e){
+  e.preventDefault();
+  displayMovements(currAccount.movements,!sorted);
+  sorted = !sorted; 
+});
