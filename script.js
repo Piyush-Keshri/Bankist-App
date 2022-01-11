@@ -77,33 +77,34 @@ const account3 = {
       containerMovements.insertAdjacentHTML('afterbegin',html);
     });
   }
-  displayMovements(account1.movements);
+  
 
 //calcDisplayBalance calulates and displays the total balance in an account.
 //It uses reduce() method to calulate the balance of the account.
 //Balance is displayed by modifying the labelBalance variable.
 
-  const calcDisplayBalance = function(movements){
-    const balance = movements.reduce((acc,mov) => acc+mov,0);
-    labelBalance.textContent =`₹ ${balance}`
-  };
+  const calcDisplayBalance = function(account){
+    account.balance = account.movements.reduce((acc,mov) => acc+mov,0);
+    labelBalance.textContent =`₹ ${account.balance}`
+  };  
 
-  calcDisplayBalance(account1.movements);
+  //SUMMARY  
 
-  const calcDisplaySummary = function(movements){
-    const incomes = movements.filter(mov => mov>0).reduce((acc,mov) => acc+mov,0)
+  const calcDisplaySummary = function(account){
+    const incomes = account.movements.filter(mov => mov>0).reduce((acc,mov) => acc+mov,0)
     labelSumIn.textContent = `₹${incomes}`;
 
-    const out = movements.filter(mov => mov<0).reduce((acc,mov) => acc+mov,0);
+    const out = account.movements.filter(mov => mov<0).reduce((acc,mov) => acc+mov,0);
     labelSumOut.textContent = `₹${Math.abs(out)}`;
 
-    const interest = movements.filter(mov => mov>0)
-                              .map(deposit => deposit*1.2/100)
+    const interest = account.movements.filter(mov => mov>0)
+                              .map(deposit => deposit*(account.interestRate/100))
                               .filter(int => int >= 1)
                               .reduce((acc,deposit) => acc+deposit,0);
     labelSumInterest.textContent = `₹${interest}` 
   }
-  calcDisplaySummary(account1.movements);
+
+//--USERNAME
 
   const createUserNames = function(accs){
     accs.forEach(function(acc){
@@ -113,11 +114,75 @@ const account3 = {
 
   createUserNames(accounts);
 
-  // const currencies = new Map([
-  //   ['USD', 'United States dollar'],
-  //   ['EUR', 'Euro'],
-  //   ['GBP', 'Pound sterling'],
-  // ]);
+const updateUI = function(acc)
+{
+//Display Movements
+displayMovements(acc.movements);
+
+//Display Balance
+calcDisplayBalance(acc);
+
+//Display Summary 
+calcDisplaySummary(acc);
+
+
+  }
+
+  //Event Handler
+
+  let currAccount ;
+
+  btnLogin.addEventListener('click',function(e)
+  { e.preventDefault();
+    
+  currAccount = accounts.find(acc => acc.username === inputLoginUsername.value);
   
-  // const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
-  
+  if(currAccount?.pin === Number(inputLoginPin.value)){
+    //If the username and password are correct display balance movements and summary.
+
+    //Clear Input Fields
+    inputLoginUsername.value = inputLoginPin.value = '';
+    inputLoginPin.blur();
+
+    //Display UI and Message
+    labelWelcome.textContent = `Welcome Back , ${currAccount.owner.split(' ')[0]}`;
+    containerApp.style.opacity = 100;
+
+    //Update UI
+    updateUI(currAccount);
+  }
+
+  });
+
+  // MONEY TRANSFERS
+
+  btnTransfer.addEventListener('click',function(e){
+    e.preventDefault();
+
+    const amount = Number(inputTransferAmount.value);
+    const receiverAcc =accounts.find(acc => acc.username === inputTransferTo.value);
+    inputTransferTo.value = inputTransferAmount.value = '';
+
+    if(receiverAcc && amount >0 && currAccount.balance >= amount && receiverAcc?.username !== currAccount.username ){
+
+      currAccount.movements.push(-amount);
+      receiverAcc.movements.push(amount);
+      updateUI(currAccount);
+    } 
+
+  });
+
+btnClose.addEventListener('click', function(e){
+  e.preventDefault();
+    if(inputCloseUsername.value === currAccount.username && Number(inputClosePin.value) === currAccount.pin)
+    {
+    const index = accounts.findIndex(acc => acc.username === currAccount.username);
+    
+    //Delete Account
+    accounts.splice(index,1);
+
+    //Hide UI
+    containerApp.style.opacity = 0;
+    }
+    inputCloseUsername.value = inputClosePin.value = '';
+})
