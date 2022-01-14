@@ -13,9 +13,9 @@ const account1 = {
     '2020-01-28T09:15:04.904Z',
     '2020-04-01T10:17:24.185Z',
     '2020-05-08T14:11:59.604Z',
-    '2020-05-27T17:01:17.194Z',
-    '2020-07-11T23:36:17.929Z',
-    '2020-07-12T10:51:36.790Z',
+    '2022-01-07T17:01:17.194Z',
+    '2022-01-09T23:36:17.929Z',
+    '2022-01-12T10:51:36.790Z',
   ],
   currency: 'EUR',
   locale: 'pt-PT', // de-DE
@@ -70,6 +70,38 @@ const inputLoanAmount = document.querySelector('.form_input-loan-amount');
 const inputCloseUsername = document.querySelector('.form_input-user');
 const inputClosePin = document.querySelector('.form_input-pin');
 
+//FUNCTIONS
+
+const formatMovementDate = function (date,locale) {
+
+  const calcDaysPassed = (date1, date2) => Math.abs(date2 - date1) / (1000 * 24 * 60 * 60);
+
+  const daysPassed = Math.floor(calcDaysPassed(new Date(), date));
+  console.log(daysPassed);
+
+  if (daysPassed === 0) return 'Today';
+  if (daysPassed === 1) return 'Yesterday';
+  if (daysPassed <= 7) return `${daysPassed} days ago`
+
+  // const day = `${date.getDate()}`.padStart(2, 0);
+  // const month = `${date.getMonth() + 1}`.padStart(2, 0);
+  // const year = date.getFullYear();
+
+  // return `${day}/${month}/${year}`;
+
+//Internationalisation API is Used.
+
+return new Intl.DateTimeFormat(locale).format(date);
+};
+
+const formatCurrency = function(value,locale,currency){
+  return new Intl.NumberFormat(locale,{
+    style: 'currency',
+    currency:currency,
+  }).format(value);
+};
+
+
 //displayMovements function updates the movements of a account,whether money is withdrawn or deposited is shown.
 //The function works by modifying the html of 'movements-row' by using a for-each loop.
 //The values comes from an array of accounts object where all the movements are stored.
@@ -85,16 +117,15 @@ const displayMovements = function (account, sort = false) {
     const type = mov > 0 ? 'deposit' : 'withdrawal'
 
     const date = new Date(account.movementsDates[i]);
-    const day = `${date.getDate()}`.padStart(2, 0);
-    const month = `${date.getMonth() + 1}`.padStart(2, 0);
-    const year = date.getFullYear();
 
-    const displayDate = `${day}/${month}/${year}`;
+    const displayDate = formatMovementDate(date,account.locale);
+
+    const formattedMovement = formatCurrency(mov,account.locale,account.currency);
 
     const html = `<div class="movements_row">
           <div class="movements_type movements_type-${type}">${i + 1} ${type}</div>
           <div class="movements_date">${displayDate}</div>
-          <div class="movements_value">₹ ${mov.toFixed(2)}</div>
+          <div class="movements_value">${formattedMovement}</div>
       </div>`;
 
     containerMovements.insertAdjacentHTML('afterbegin', html);
@@ -109,7 +140,8 @@ const displayMovements = function (account, sort = false) {
 
 const calcDisplayBalance = function (account) {
   account.balance = account.movements.reduce((acc, mov) => acc + mov, 0);
-  labelBalance.textContent = `₹ ${account.balance.toFixed(2)}`
+
+  labelBalance.textContent = formatCurrency(account.balance,account.locale,account.currency);
 };
 
 
@@ -120,16 +152,16 @@ const calcDisplayBalance = function (account) {
 
 const calcDisplaySummary = function (account) {
   const incomes = account.movements.filter(mov => mov > 0).reduce((acc, mov) => acc + mov, 0)
-  labelSumIn.textContent = `₹${incomes.toFixed(2)}`;
+  labelSumIn.textContent = formatCurrency(incomes,account.locale,account.currency);
 
   const out = account.movements.filter(mov => mov < 0).reduce((acc, mov) => acc + mov, 0);
-  labelSumOut.textContent = `₹${Math.abs(out).toFixed(2)}`;
+  labelSumOut.textContent = formatCurrency(Math.abs(out),account.locale,account.currency);
 
   const interest = account.movements.filter(mov => mov > 0)
     .map(deposit => deposit * (account.interestRate / 100))
     .filter(int => int >= 1)
     .reduce((acc, deposit) => acc + deposit, 0);
-  labelSumInterest.textContent = `₹${interest.toFixed(2)}`
+  labelSumInterest.textContent = formatCurrency(interest,account.locale,account.currency);
 }
 
 
@@ -165,6 +197,9 @@ let currAccount;
 // currAccount = account1;
 // updateUI(currAccount);
 // containerApp.style.opacity = 100;
+
+//Experimenting API
+
 
 // Events Handling -- All the features are handled after here...
 
@@ -208,13 +243,20 @@ btnLogin.addEventListener('click', function (e) {
 
     //Current Date 
 
+    //Formatting the Dates
     const now = new Date();
-    const date = `${now.getDate()}`.padStart(2, 0);
-    const month = `${now.getMonth() + 1}`.padStart(2, 0);
-    const year = now.getFullYear();
-    const hour = `${now.getHours()}`.padStart(2,0);
-    const min = `${now.getMinutes()}`.padStart(2,0);
-    labelDate.textContent = `${date}/${month}/${year} , ${hour}:${min}`;
+    const options = {
+      hour: 'numeric',
+      minute: 'numeric',
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+    };
+
+    //Date should be displayed to whatever language user have set their browser.
+    // const locale = navigator.language;
+
+    labelDate.textContent = new Intl.DateTimeFormat(currAccount.locale, options).format(now);
 
     //Update UI
     updateUI(currAccount);
@@ -242,7 +284,7 @@ btnTransfer.addEventListener('click', function (e) {
     receiverAcc.movementsDates.push(new Date().toISOString());
 
     updateUI(currAccount);
- 
+
 
   }
 
