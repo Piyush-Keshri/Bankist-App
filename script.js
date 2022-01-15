@@ -72,7 +72,7 @@ const inputClosePin = document.querySelector('.form_input-pin');
 
 //FUNCTIONS
 
-const formatMovementDate = function (date,locale) {
+const formatMovementDate = function (date, locale) {
 
   const calcDaysPassed = (date1, date2) => Math.abs(date2 - date1) / (1000 * 24 * 60 * 60);
 
@@ -89,15 +89,15 @@ const formatMovementDate = function (date,locale) {
 
   // return `${day}/${month}/${year}`;
 
-//Internationalisation API is Used.
+  //Internationalisation API is Used.
 
-return new Intl.DateTimeFormat(locale).format(date);
+  return new Intl.DateTimeFormat(locale).format(date);
 };
 
-const formatCurrency = function(value,locale,currency){
-  return new Intl.NumberFormat(locale,{
+const formatCurrency = function (value, locale, currency) {
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency:currency,
+    currency: currency,
   }).format(value);
 };
 
@@ -118,9 +118,9 @@ const displayMovements = function (account, sort = false) {
 
     const date = new Date(account.movementsDates[i]);
 
-    const displayDate = formatMovementDate(date,account.locale);
+    const displayDate = formatMovementDate(date, account.locale);
 
-    const formattedMovement = formatCurrency(mov,account.locale,account.currency);
+    const formattedMovement = formatCurrency(mov, account.locale, account.currency);
 
     const html = `<div class="movements_row">
           <div class="movements_type movements_type-${type}">${i + 1} ${type}</div>
@@ -141,7 +141,7 @@ const displayMovements = function (account, sort = false) {
 const calcDisplayBalance = function (account) {
   account.balance = account.movements.reduce((acc, mov) => acc + mov, 0);
 
-  labelBalance.textContent = formatCurrency(account.balance,account.locale,account.currency);
+  labelBalance.textContent = formatCurrency(account.balance, account.locale, account.currency);
 };
 
 
@@ -152,16 +152,16 @@ const calcDisplayBalance = function (account) {
 
 const calcDisplaySummary = function (account) {
   const incomes = account.movements.filter(mov => mov > 0).reduce((acc, mov) => acc + mov, 0)
-  labelSumIn.textContent = formatCurrency(incomes,account.locale,account.currency);
+  labelSumIn.textContent = formatCurrency(incomes, account.locale, account.currency);
 
   const out = account.movements.filter(mov => mov < 0).reduce((acc, mov) => acc + mov, 0);
-  labelSumOut.textContent = formatCurrency(Math.abs(out),account.locale,account.currency);
+  labelSumOut.textContent = formatCurrency(Math.abs(out), account.locale, account.currency);
 
   const interest = account.movements.filter(mov => mov > 0)
     .map(deposit => deposit * (account.interestRate / 100))
     .filter(int => int >= 1)
     .reduce((acc, deposit) => acc + deposit, 0);
-  labelSumInterest.textContent = formatCurrency(interest,account.locale,account.currency);
+  labelSumInterest.textContent = formatCurrency(interest, account.locale, account.currency);
 }
 
 
@@ -180,6 +180,7 @@ createUserNames(accounts);
 //updateUI method resets the UI . 
 
 const updateUI = function (acc) {
+ 
   //Display Movements
   displayMovements(acc);
 
@@ -190,15 +191,48 @@ const updateUI = function (acc) {
   calcDisplaySummary(acc);
 }
 
+//Timeout Feature
+
+const startLogOutTimer = function () {
+
+  const tick = function () {
+
+    const min = String(Math.trunc(time / 60)).padStart(2, 0);
+    const sec = String(time % 60).padStart(2, 0);
+
+    //In each call,print the remaining time to UI
+    labelTimer.textContent = `${min} : ${sec}`;
+
+    //When 0 seconds, stop timer and log out user
+    if (time === 0) {
+      clearInterval(timer);
+      labelWelcome.textContent = 'Log in to get Started';
+      containerApp.style.opacity = 0;
+    }
+
+    //Decrease 1 sec
+    time--;
+
+  }
+  //Set time to 5 minutes
+  let time = 300;
+
+  //Call the timer every Second
+  tick();
+  const timer = setInterval(tick, 1000);
+
+  return timer;
+
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////////
-let currAccount;
+let currAccount ,timer;
 
-//Fake always logged in
-// currAccount = account1;
-// updateUI(currAccount);
-// containerApp.style.opacity = 100;
-
-//Experimenting API
+// Fake always logged in
+currAccount = account1;
+updateUI(currAccount);
+containerApp.style.opacity = 100;
 
 
 // Events Handling -- All the features are handled after here...
@@ -211,15 +245,26 @@ btnLoan.addEventListener('click', function (e) {
 
   const amount = Math.floor(inputLoanAmount.value);
   if (amount > 0 && currAccount.movements.some(mov => mov >= amount * 0.1)) {
-    //Add movement
-    currAccount.movements.push(amount);
 
-    //Add Loan Date
-    currAccount.movementsDates.push(new Date().toISOString());
+    //Loan will be approved after 5 seconds.
 
-    updateUI(currAccount);
+    setTimeout(function () {
+      //Add movement
+      currAccount.movements.push(amount);
+
+      //Add Loan Date
+      currAccount.movementsDates.push(new Date().toISOString());
+
+      updateUI(currAccount);
+  
+    //Reset timer
+    clearInterval(timer);
+    timer = startLogOutTimer();
+
+    }, 5000);
   }
   inputLoanAmount.value = '';
+
 });
 
 
@@ -232,10 +277,6 @@ btnLogin.addEventListener('click', function (e) {
 
   if (currAccount?.pin === +(inputLoginPin.value)) {
     //If the username and password are correct display balance movements and summary.
-
-    //Clear Input Fields
-    inputLoginUsername.value = inputLoginPin.value = '';
-    inputLoginPin.blur();
 
     //Display UI and Message
     labelWelcome.textContent = `Welcome Back , ${currAccount.owner.split(' ')[0]}`;
@@ -257,6 +298,16 @@ btnLogin.addEventListener('click', function (e) {
     // const locale = navigator.language;
 
     labelDate.textContent = new Intl.DateTimeFormat(currAccount.locale, options).format(now);
+
+    //Clear Input Fields
+    inputLoginUsername.value = inputLoginPin.value = '';
+    inputLoginPin.blur();
+
+    //Timer 
+    if(timer){
+      clearInterval(timer); 
+    }
+    timer = startLogOutTimer();
 
     //Update UI
     updateUI(currAccount);
@@ -285,6 +336,9 @@ btnTransfer.addEventListener('click', function (e) {
 
     updateUI(currAccount);
 
+    //Reset timer
+    clearInterval(timer);
+    timer = startLogOutTimer();
 
   }
 
