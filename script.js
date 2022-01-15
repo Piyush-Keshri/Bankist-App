@@ -230,9 +230,10 @@ const startLogOutTimer = function () {
 let currAccount ,timer;
 
 // Fake always logged in
-currAccount = account1;
-updateUI(currAccount);
-containerApp.style.opacity = 100;
+
+// currAccount = account1;
+// updateUI(currAccount);
+// containerApp.style.opacity = 100;
 
 
 // Events Handling -- All the features are handled after here...
